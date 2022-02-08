@@ -1,0 +1,27 @@
+//load asset geometry of IS
+//inList for filter by many attribute table.
+var geometry= ee.FeatureCollection('users/floodmowram/Taing_Krasaing_IS');
+  Map.addLayer(geometry,{},'Study_Area');
+
+// Sentinel-2 Normalized Difference Vegetation Index (NDVI)
+var S2_collection = ee.ImageCollection("COPERNICUS/S2")
+  .filterBounds(geometry)
+  .filterDate('2020-01-01', '2020-05-31')
+  .filterMetadata('CLOUDY_PIXEL_PERCENTAGE', 'less_than', 20)
+  .map(addnd);
+
+print(S2_collection);
+var S2_display = {bands: ['B4', 'B3', 'B2'], min: 0, max: 3000};
+var S2_mosaic = S2_collection.median().clip(geometry);
+Map.addLayer(S2_mosaic, S2_display, "S2-Natural-Colors");
+
+// calculation of NDVI
+function addnd(input) {
+  var nd = input.normalizedDifference(['B8', 'B4']).rename('ndvi');
+  return input.addBands(nd);
+}
+var ndvi_palette = 'FFFFFF, CE7E45, DF923D, F1B555, FCD163, 99B718, 74A901, 66A000, 529400, ' + '3E8601, 207401, 056201, 004C00, 023B01, 012E01, 011D01, 011301';
+
+var ndvi_S2 = S2_collection.select('ndvi').median().clip(geometry);
+Map.addLayer(ndvi_S2, {min: -0.1, max: 1, palette: ndvi_palette}, 'NDVI S2-Dry',false);
+Map.centerObject(geometry, 12); 
